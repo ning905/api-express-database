@@ -1,31 +1,51 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../../db");
+const { addSqlCondition } = require("../functions/queryFunctions");
 
 router.get("/", async (req, res) => {
+  let per_page = 20;
+  let page = 1;
   let sqlQuery = "SELECT * FROM books";
   const params = [];
 
   if (req.query.type) {
     params.push(req.query.type);
-    sqlQuery += ' WHERE "type" = $1';
+    sqlQuery += addSqlCondition(params, "type", sqlQuery);
   }
 
   if (req.query.topic) {
     params.push(req.query.topic);
-
-    if (params.length === 1) {
-      sqlQuery += " WHERE topic = $1";
-    } else if (params.length === 2) {
-      sqlQuery += " AND topic = $2";
-    }
+    sqlQuery += addSqlCondition(params, "topic", sqlQuery);
   }
 
-  console.log(sqlQuery);
+  if (req.query.author) {
+    params.push(req.query.author);
+    sqlQuery += addSqlCondition(params, "author", sqlQuery);
+  }
+
+  if (req.query.per_page) {
+    const newPer_page = Number(req.query.per_page);
+    if (newPer_page >= 10 && newPer_page <= 50) {
+      per_page = newPer_page;
+    }
+  }
+  params.push(per_page);
+  sqlQuery += ` LIMIT $${params.length}`;
+
+  if (req.query.page) {
+    page = Number(req.query.page);
+  }
+  const pageStart = per_page * (page - 1);
+  params.push(pageStart);
+  sqlQuery += ` OFFSET $${params.length}`;
+
+  //   console.log(sqlQuery);
+  //   console.log(params);
 
   const qResult = await db.query(sqlQuery, params);
 
-  console.log(qResult.rows);
+  //   console.log(qResult.rows);
 
   res.status(200).json({ books: qResult.rows });
 });
