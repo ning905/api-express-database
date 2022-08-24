@@ -1,4 +1,4 @@
-function addSqlCondition(params, newParam, sqlQuery) {
+function addSqlCondition(params, newParam) {
   if (params.length === 1) {
     condition = ` WHERE ${newParam} = $1`;
   } else {
